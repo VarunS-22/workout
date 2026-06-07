@@ -1138,12 +1138,64 @@ function EditExercise({ ex, update, close, onDeleted }) {
 
 function SettingsPanel({ update }) {
   const [confirm, setConfirm] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [imported, setImported] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [showImport, setShowImport] = useState(false);
+
+  const exportData = async () => {
+    try {
+      const raw = await store.get();
+      await navigator.clipboard.writeText(JSON.stringify(raw));
+      setCopied(true); setTimeout(() => setCopied(false), 2500);
+    } catch (e) { alert("Copy failed — try a different browser."); }
+  };
+
+  const importData = () => {
+    try {
+      const parsed = JSON.parse(importText);
+      update(() => migrate(parsed));
+      setImported(true); setShowImport(false);
+      setTimeout(() => setImported(false), 2500);
+    } catch (e) { alert("Invalid data — make sure you copied the full export."); }
+  };
+
   return (
     <Panel>
       <div style={{ fontFamily: DISPLAY }} className="text-lg font-bold uppercase mb-2 flex items-center gap-2"><SettingsIcon size={18} /> Data</div>
-      <p style={{ color: C.muted }} className="text-xs mb-3">Saved to your account — follows you on any device where you open this app signed in.</p>
-      {!confirm ? (<button onClick={() => setConfirm(true)} className="w-full rounded-lg py-2.5 text-sm font-semibold flex items-center justify-center gap-2" style={{ background: C.panel2, border: `1px solid ${C.border}`, color: C.red }}><RotateCcw size={15} /> Reset all data</button>) : (
-        <div className="flex gap-2"><button onClick={() => { update(() => seedData()); setConfirm(false); }} className="flex-1 rounded-lg py-2.5 text-sm font-semibold" style={{ background: C.red, color: C.bg }}>Confirm reset</button><button onClick={() => setConfirm(false)} className="flex-1 rounded-lg py-2.5 text-sm font-semibold" style={{ background: C.panel2, border: `1px solid ${C.border}` }}>Cancel</button></div>
+      <p style={{ color: C.muted }} className="text-xs mb-3">Your data is stored in the cloud and syncs across devices.</p>
+
+      <button onClick={exportData} className="w-full rounded-lg py-2.5 text-sm font-semibold flex items-center justify-center gap-2 mb-2"
+        style={{ background: copied ? C.cyan : C.panel2, border: `1px solid ${copied ? C.cyan : C.border}`, color: copied ? C.bg : C.text }}>
+        {copied ? <><Check size={15} /> Copied!</> : "Export data (copy to clipboard)"}
+      </button>
+
+      <button onClick={() => setShowImport(!showImport)} className="w-full rounded-lg py-2.5 text-sm font-semibold flex items-center justify-center gap-2 mb-2"
+        style={{ background: imported ? C.cyan : C.panel2, border: `1px solid ${imported ? C.cyan : C.border}`, color: imported ? C.bg : C.muted }}>
+        {imported ? <><Check size={15} /> Imported!</> : "Import data"}
+      </button>
+
+      {showImport && (
+        <div className="mb-2">
+          <textarea value={importText} onChange={(e) => setImportText(e.target.value)} rows={4}
+            className="w-full rounded-lg px-3 py-2 text-xs outline-none mb-2"
+            style={{ background: C.panel2, border: `1px solid ${C.border}`, color: C.text, resize: "vertical", fontFamily: "monospace" }}
+            placeholder='Paste exported JSON here...' />
+          <button onClick={importData} className="w-full rounded-lg py-2 text-sm font-bold uppercase"
+            style={{ background: C.lime, color: C.bg, fontFamily: DISPLAY }}>Import & save</button>
+        </div>
+      )}
+
+      {!confirm ? (
+        <button onClick={() => setConfirm(true)} className="w-full rounded-lg py-2.5 text-sm font-semibold flex items-center justify-center gap-2"
+          style={{ background: C.panel2, border: `1px solid ${C.border}`, color: C.red }}>
+          <RotateCcw size={15} /> Reset all data
+        </button>
+      ) : (
+        <div className="flex gap-2">
+          <button onClick={() => { update(() => seedData()); setConfirm(false); }} className="flex-1 rounded-lg py-2.5 text-sm font-semibold" style={{ background: C.red, color: C.bg }}>Confirm reset</button>
+          <button onClick={() => setConfirm(false)} className="flex-1 rounded-lg py-2.5 text-sm font-semibold" style={{ background: C.panel2, border: `1px solid ${C.border}` }}>Cancel</button>
+        </div>
       )}
     </Panel>
   );
