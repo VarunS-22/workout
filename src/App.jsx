@@ -469,7 +469,9 @@ function Log({ data, update }) {
   if (session) return <SessionEditor key={session.id || "new"} session={session} close={() => setSession(null)} data={data} update={update} />;
 
   const planned = data.sessions.filter((s) => s.status === "planned").sort((a, b) => a.date.localeCompare(b.date));
-  const done = data.sessions.filter(isDone).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 12);
+const doneAll = data.sessions.filter(isDone).sort((a, b) => b.date.localeCompare(a.date));
+const last3Dates = [...new Set(doneAll.map((s) => s.date))].slice(0, 3);
+const done = doneAll.filter((s) => last3Dates.includes(s.date));
   const isFuture = date > today, isPast = date < today;
   const existingForDate = data.sessions.filter((x) => x.date === date && isDone(x));
 
